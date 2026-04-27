@@ -1,30 +1,29 @@
 name: qanswer
-description: "Aducation CRUD system."
-publish_to: 'none'
+description: "Education CRUD system."
+publish_to: "none"
 
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.10.8 <4.0.0'
+  sdk: ">=3.10.8 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  
-  # ডাটাবেস ব্যবহারের জন্য
+
+  # DATABASE
   sqflite: ^2.3.0
   path: ^1.8.3
 
-  # ডাটাবেস ফাইল এক্সপোর্ট/শেয়ার করার জন্য
-  share_plus: any
-
-  # ব্যাকআপ ফাইল সিলেক্ট বা ইমপোর্ট করার জন্য
+  # FILE & SHARE
   file_picker: ^8.0.0
+  share_plus: ^10.0.0
+
+  # FIREBASE
   firebase_core: ^4.7.0
   cloud_firestore: ^6.3.0
-  
 
 dev_dependencies:
   flutter_test:
@@ -33,3 +32,37 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # =========================
+  # ASSETS (ONLY FOR BUNDLED FILES)
+  # =========================
+  assets:
+    - assets/fonts/
+
+  # =========================
+  # BUILT-IN FONTS
+  # =========================
+  fonts:
+    - family: FNArafatNoakhaliItalic
+      fonts:
+        - asset: assets/fonts/FNArafatNoakhali-Italic.ttf
+
+    - family: FNArafatNoakhaliRegular
+      fonts:
+        - asset: assets/fonts/FNArafatNoakhali-Regular.ttf
+
+    - family: FNArafatNoakhaliANSIV1Italic
+      fonts:
+        - asset: assets/fonts/FNArafatNoakhaliANSIV1-Italic.ttf
+
+    - family: FNArafatNoakhaliANSIV1Regular
+      fonts:
+        - asset: assets/fonts/FNArafatNoakhaliANSIV1-Regular.ttf
+
+    - family: FNArafatNoakhaliANSIV2Italic
+      fonts:
+        - asset: assets/fonts/FNArafatNoakhaliANSIV2-Italic.ttf
+
+    - family: FNArafatNoakhaliANSIV2Regular
+      fonts:
+        - asset: assets/fonts/FNArafatNoakhaliANSIV2-Regular.ttf

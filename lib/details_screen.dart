@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'models/question_model.dart';
+import 'font_db.dart';
 
 class DetailsScreen extends StatefulWidget {
   final QuestionModel model;
@@ -25,82 +27,128 @@ class DetailsScreen extends StatefulWidget {
 class _DetailsScreenState extends State<DetailsScreen> {
   bool isDark = false;
 
-  // 🔤 FONT DATA
-  String selectedFont = "Roboto";
-
-  List<String> builtInFonts = [
-    "Roboto",
-    "Poppins",
-    "Montserrat",
-    "Lato",
-    "OpenSans",
-  ];
-
-  List<String> customFonts = [];
+  String selectedFont = "default";
 
   double fontSize = 15;
 
-  // =========================
-  // COPY TEXT
-  // =========================
-  void _copyText(String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Copied to clipboard")),
-    );
+  final List<String> builtInFonts = [
+    "FNArafatNoakhali-Italic",
+    "FNArafatNoakhali-Regular",
+    "FNArafatNoakhaliANSIV1-Italic",
+    "FNArafatNoakhaliANSIV1-Regular",
+    "FNArafatNoakhaliANSIV2-Italic",
+  ];
+
+  final List<String> customFonts = [];
+
+  final FontDB fontDB = FontDB();
+
+  // ================= SNACKBAR =================
+  void showMsg(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
-  // =========================
-  // ADD TTF FONT (FIXED)
-  // =========================
+  // ================= COPY =================
+  Future<void> copyText(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    showMsg("Copied");
+  }
+
+  // ================= LOAD FONTS FROM DB =================
+  Future<void> loadFontsFromDB() async {
+    final fonts = await fontDB.getFonts();
+
+    for (var f in fonts) {
+      final name = f['name'];
+      final path = f['path'];
+
+      final file = File(path);
+
+      if (await file.exists()) {
+        final loader = FontLoader(name);
+        loader.addFont(file.readAsBytes().then(ByteData.sublistView));
+        await loader.load();
+
+        customFonts.add(name);
+      }
+    }
+
+    setState(() {});
+  }
+
+  // ================= ADD FONT =================
   Future<void> addCustomFont() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['ttf'],
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['ttf', 'otf'],
+        withData: true,
+      );
 
-    if (result == null || result.files.single.path == null) return;
+      if (result == null || result.files.isEmpty) return;
 
-    final file = File(result.files.single.path!);
+      final bytes = result.files.first.bytes;
+      if (bytes == null) return;
 
-    // unique font name
-    final fontName = "CustomFont${DateTime.now().millisecondsSinceEpoch}";
+      final dir = await getApplicationDocumentsDirectory();
 
-    final fontBytes = await file.readAsBytes();
+      final fontName =
+          "CustomFont_${DateTime.now().millisecondsSinceEpoch}";
 
-    // FIX: proper ByteData conversion
-    final byteData = ByteData.sublistView(fontBytes);
+      final filePath = "${dir.path}/$fontName.ttf";
 
-    final loader = FontLoader(fontName);
-    loader.addFont(Future.value(byteData));
+      final file = File(filePath);
+      await file.writeAsBytes(bytes);
 
-    await loader.load();
+      // SAVE TO DB
+      await fontDB.insertFont(fontName, filePath);
 
-    setState(() {
-      customFonts.add(fontName);
-      selectedFont = fontName;
-    });
+      final loader = FontLoader(fontName);
+      loader.addFont(file.readAsBytes().then(ByteData.sublistView));
+      await loader.load();
+
+      setState(() {
+        customFonts.add(fontName);
+        selectedFont = fontName;
+      });
+
+      showMsg("Font added successfully");
+    } catch (e) {
+      showMsg("Font load failed");
+    }
   }
 
-  // =========================
-  // BOX UI
-  // =========================
-  Widget _buildBox({
+  // ================= INIT =================
+  @override
+  void initState() {
+    super.initState();
+    loadFontsFromDB();
+  }
+
+  // ================= BOX UI =================
+  Widget buildBox({
     required String title,
     required String content,
-    required Color titleColor,
-    required Color borderColor,
+    required Color color,
   }) {
     return GestureDetector(
-      onTap: () => _copyText(content),
+      onTap: () => copyText(content),
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 15),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1.5),
+          border: Border.all(color: color),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,20 +156,17 @@ class _DetailsScreenState extends State<DetailsScreen> {
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: titleColor,
+                color: color,
               ),
             ),
             const SizedBox(height: 6),
-
-            // 🔥 FIX: font applied correctly
             SelectableText(
               content,
               style: TextStyle(
                 fontSize: fontSize,
-                fontFamily: selectedFont,
-                fontWeight: FontWeight.w600,
+                fontFamily:
+                    selectedFont == "default" ? null : selectedFont,
                 color: isDark ? Colors.white70 : Colors.black87,
               ),
             ),
@@ -131,19 +176,16 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
-  // =========================
-  // BUILD
-  // =========================
   @override
   Widget build(BuildContext context) {
     final allFonts = [
+      "default",
       ...builtInFonts,
       ...customFonts,
     ];
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF121212) : Colors.white,
+      backgroundColor: isDark ? Colors.black : Colors.white,
 
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : Colors.indigo,
@@ -151,11 +193,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         actions: [
           Switch(
             value: isDark,
-            onChanged: (val) {
-              setState(() {
-                isDark = val;
-              });
-            },
+            onChanged: (v) => setState(() => isDark = v),
           ),
           IconButton(
             icon: const Icon(Icons.edit),
@@ -168,10 +206,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-
-            // =========================
-            // FONT CONTROL
-            // =========================
+            // ================= FONT PANEL =================
             Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 15),
@@ -181,77 +216,57 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ),
               child: Column(
                 children: [
-
-                  // 🔤 FONT SELECT
-                  Row(
-                    children: [
-                      const Text("Font: "),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: selectedFont,
-                          items: allFonts.map((font) {
-                            return DropdownMenuItem(
-                              value: font,
-                              child: Text(font),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                selectedFont = val;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ],
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: selectedFont,
+                    items: allFonts
+                        .map((f) => DropdownMenuItem(
+                              value: f,
+                              child: Text(f),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => selectedFont = val);
+                        showMsg("Font changed");
+                      }
+                    },
                   ),
 
                   const SizedBox(height: 10),
 
-                  // 🔠 SIZE
                   Row(
                     children: [
-                      const Text("Size: "),
+                      const Text("Size"),
                       Expanded(
                         child: Slider(
                           min: 12,
                           max: 30,
                           value: fontSize,
-                          onChanged: (val) {
-                            setState(() {
-                              fontSize = val;
-                            });
-                          },
+                          onChanged: (v) =>
+                              setState(() => fontSize = v),
                         ),
                       ),
                       Text(fontSize.toInt().toString()),
                     ],
                   ),
 
-                  const SizedBox(height: 10),
-
-                  // ➕ ADD FONT
                   ElevatedButton(
                     onPressed: addCustomFont,
-                    child: const Text("Add TTF Font"),
+                    child: const Text("Add Font"),
                   ),
                 ],
               ),
             ),
 
-            // =========================
-            // SUBJECT
-            // =========================
+            // ================= SUBJECT =================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
-                      ? [Colors.grey.shade800, Colors.black]
+                      ? [Colors.grey, Colors.black]
                       : [Colors.indigo, Colors.blue],
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -260,29 +275,25 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 widget.model.subject,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // QUESTION
-            _buildBox(
+            buildBox(
               title: "QUESTION",
               content: widget.model.question,
-              titleColor: Colors.red,
-              borderColor: Colors.redAccent,
+              color: Colors.red,
             ),
 
-            // ANSWER
-            _buildBox(
+            buildBox(
               title: "ANSWER",
               content: widget.model.answer,
-              titleColor: Colors.green,
-              borderColor: Colors.green,
+              color: Colors.green,
             ),
           ],
         ),
