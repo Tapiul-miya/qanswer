@@ -120,8 +120,34 @@ class _HomeScreenState extends State<HomeScreen> {
     List<String> filterOptions = ["All", ...subjects];
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Education CRUD"), elevation: 0),
-      body: Column(
+    
+    
+   // AppBar-এ বাটন যোগ করা
+    
+      appBar: AppBar(
+      title: const Text("Education CRUD"), elevation: 0),
+      
+      actions: [
+    IconButton(
+      icon: const Icon(Icons.download), // এক্সপোর্ট
+      onPressed: () async {
+        String? msg = await dbHelper.exportDatabase();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg ?? "Failed")));
+      },
+    ),
+    IconButton(
+      icon: const Icon(Icons.upload), // ইমপোর্ট
+      onPressed: () async {
+        bool success = await dbHelper.importDatabase();
+        if (success) {
+          _refreshList(); // ডাটা রিস্টোর হলে লিস্ট আপডেট করুন
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Restore Success!")));
+        }
+      },
+    ),
+  ],
+      
+       body: Column(
         children: [
           // --- সাবজেক্ট ফিল্টার লিস্ট ---
           Container(
