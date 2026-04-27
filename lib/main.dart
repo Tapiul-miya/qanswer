@@ -1,25 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'models/question_model.dart';
-import 'services/db_helper.dart';
 import 'details_screen.dart';
-
-void main() => runApp(const MyApp());
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        useMaterial3: false,
-      ),
-      debugShowCheckedModeBanner: false,
-      home: const HomeScreen(),
-    );
-  }
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,10 +11,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final dbHelper = DBHelper();
-
-  List<QuestionModel> allQuestions = [];
-  List<QuestionModel> filteredQuestions = [];
+  final firestore = FirebaseFirestore.instance;
 
   final List<String> subjects = [
     "Math",
@@ -44,34 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String selectedFilter = "All";
 
-  @override
-  void initState() {
-    super.initState();
-    _refreshList();
-  }
-
-  // 🔄 Refresh Data
-  Future<void> _refreshList() async {
-    final data = await dbHelper.getAllQuestions();
-    setState(() {
-      allQuestions = data;
-      _applyFilter();
-    });
-  }
-
-  // 🔍 Filter Logic
-  void _applyFilter() {
-    if (selectedFilter == "All") {
-      filteredQuestions = allQuestions;
-    } else {
-      filteredQuestions = allQuestions
-          .where((q) => q.subject == selectedFilter)
-          .toList();
-    }
-  }
-
   // ➕ Add / Edit Form
-  void _showForm(QuestionModel? model) {
+  void _showForm({QuestionModel? model, String? docId}) {
     String selectedSubject = model?.subject ?? subjects.first;
 
     final quesController =
@@ -138,23 +91,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (quesController.text.isEmpty ||
                         ansController.text.isEmpty) return;
 
-                    final q = QuestionModel(
-                      id: model?.id,
-                      subject: selectedSubject,
-                      question: quesController.text,
-                      answer: ansController.text,
-                    );
-
                     if (model == null) {
-                      await dbHelper.insert(q);
+                      // 🔥 INSERT
+                      await firestore.collection("questions").add({
+                        "subject": selectedSubject,
+                        "question": quesController.text,
+                        "answer": ansController.text,
+                        "createdAt": Timestamp.now(),
+                      });
                     } else {
-                      await dbHelper.update(q);
+                      // 🔥 UPDATE
+                      await firestore
+                          .collection("questions")
+                          .doc(docId)
+                          .update({
+                        "subject": selectedSubject,
+                        "question": quesController.text,
+                        "answer": ansController.text,
+                      });
                     }
 
-                    if (mounted) {
-                      Navigator.pop(context);
-                      _refreshList();
-                    }
+                    if (mounted) Navigator.pop(context);
                   },
                   child: const Text("Save Data"),
                 ),
@@ -173,47 +130,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final filterOptions = ["All", ...subjects];
 
     return Scaffold(
-      // ✅ FIXED HERE
       appBar: AppBar(
-        title: const Text("Education CRUD"),
+        title: const Text("Firebase CRUD"),
         elevation: 0,
-
-        actions: [
-  IconButton(
-    icon: const Icon(Icons.download),
-    onPressed: () async {
-      await dbHelper.exportDatabase();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Export Done")),
-      );
-    },
-  ),
-  IconButton(
-    icon: const Icon(Icons.upload),
-    onPressed: () async {
-      bool success = await dbHelper.importDatabase();
-
-      if (success) {
-        _refreshList();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Restore Success!")),
-        );
-      }
-    },
-  ),
-],
       ),
 
       body: Column(
         children: [
-          // 🔹 FILTER CHIPS
+          // 🔹 FILTER
           Container(
             height: 60,
             color: Colors.indigo.withOpacity(0.1),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
               itemCount: filterOptions.length,
               itemBuilder: (context, index) {
                 String subj = filterOptions[index];
@@ -221,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 4.0),
+                      const EdgeInsets.symmetric(horizontal: 5),
                   child: ChoiceChip(
                     label: Text(subj),
                     selected: isSelected,
@@ -233,7 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onSelected: (_) {
                       setState(() {
                         selectedFilter = subj;
-                        _applyFilter();
                       });
                     },
                   ),
@@ -242,66 +170,128 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 🔹 LIST
+          // 🔥 FIRESTORE LIST
           Expanded(
-            child: filteredQuestions.isEmpty
-                ? Center(
-                    child: Text(
-                        "No data found for '$selectedFilter'"),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(top: 10),
-                    itemCount: filteredQuestions.length,
-                    itemBuilder: (context, i) {
-                      final item = filteredQuestions[i];
+            child: StreamBuilder<QuerySnapshot>(
+              stream: selectedFilter == "All"
+                  ? firestore
+                      .collection("questions")
+                      .orderBy("createdAt", descending: true)
+                      .snapshots()
+                  : firestore
+                      .collection("questions")
+                      .where("subject",
+                          isEqualTo: selectedFilter)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                      child: CircularProgressIndicator());
+                }
 
-                      return Card(
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        child: ListTile(
-                          title: Text(
-                            item.subject,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.indigo,
-                            ),
-                          ),
-                          subtitle: Text(
-                            "Q: ${item.question}",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DetailsScreen(
-                                  model: item,
-                                  onEdit: (model) =>
-                                      _showForm(model),
-                                ),
-                              ),
-                            ).then((_) => _refreshList());
-                          },
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete,
-                                color: Colors.redAccent),
-                            onPressed: () async {
-                              await dbHelper.delete(item.id!);
-                              _refreshList();
-                            },
+                final docs = snapshot.data!.docs;
+
+                if (docs.isEmpty) {
+                  return const Center(child: Text("No Data"));
+                }
+
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, i) {
+                    final data = docs[i];
+
+                    return Card(
+                      elevation: 3,
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      child: ListTile(
+                        title: Text(
+                          data["subject"],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigo,
                           ),
                         ),
-                      );
-                    },
-                  ),
+                        subtitle: Text(
+                          "Q: ${data["question"]}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        // 👉 DETAILS PAGE
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DetailsScreen(
+                                model: QuestionModel(
+                                  id: data.id,
+                                  subject: data["subject"],
+                                  question: data["question"],
+                                  answer: data["answer"],
+                                ),
+                                onEdit: (model) => _showForm(
+                                  model: model,
+                                  docId: data.id,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+
+                        // ❌ DELETE WITH CONFIRM
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete,
+                              color: Colors.red),
+                          onPressed: () async {
+                            bool? confirm = await showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  AlertDialog(
+                                title:
+                                    const Text("Confirm Delete"),
+                                content: const Text(
+                                    "Are you sure?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(
+                                            context, false),
+                                    child:
+                                        const Text("Cancel"),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(
+                                            context, true),
+                                    child:
+                                        const Text("Delete"),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              await firestore
+                                  .collection("questions")
+                                  .doc(data.id)
+                                  .delete();
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
 
+      // ➕ ADD BUTTON
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(null),
+        onPressed: () => _showForm(),
         child: const Icon(Icons.add),
       ),
     );
