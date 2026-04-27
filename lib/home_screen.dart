@@ -36,7 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
@@ -53,35 +54,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   model == null ? "Add Entry" : "Update Entry",
                   style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 10),
 
                 DropdownButtonFormField<String>(
                   value: selectedSubject,
-                  decoration:
-                      const InputDecoration(labelText: "Subject"),
+                  decoration: const InputDecoration(
+                      labelText: "Subject"),
                   items: subjects
-                      .map((s) =>
-                          DropdownMenuItem(value: s, child: Text(s)))
+                      .map((s) => DropdownMenuItem(
+                          value: s, child: Text(s)))
                       .toList(),
-                  onChanged: (val) =>
-                      setModalState(() => selectedSubject = val!),
+                  onChanged: (val) => setModalState(
+                      () => selectedSubject = val!),
                 ),
 
                 TextField(
                   controller: quesController,
                   maxLines: null,
-                  decoration:
-                      const InputDecoration(labelText: "Question"),
+                  decoration: const InputDecoration(
+                      labelText: "Question"),
                 ),
 
                 TextField(
                   controller: ansController,
                   maxLines: null,
-                  decoration:
-                      const InputDecoration(labelText: "Answer"),
+                  decoration: const InputDecoration(
+                      labelText: "Answer"),
                 ),
 
                 const SizedBox(height: 20),
@@ -92,22 +94,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         ansController.text.isEmpty) return;
 
                     if (model == null) {
-                      // 🔥 INSERT
-                      await firestore.collection("questions").add({
+                      await firestore
+                          .collection("questions")
+                          .add({
                         "subject": selectedSubject,
-                        "question": quesController.text,
-                        "answer": ansController.text,
+                        "question":
+                            quesController.text.trim(),
+                        "answer":
+                            ansController.text.trim(),
                         "createdAt": Timestamp.now(),
                       });
                     } else {
-                      // 🔥 UPDATE
                       await firestore
                           .collection("questions")
                           .doc(docId)
                           .update({
                         "subject": selectedSubject,
-                        "question": quesController.text,
-                        "answer": ansController.text,
+                        "question":
+                            quesController.text.trim(),
+                        "answer":
+                            ansController.text.trim(),
                       });
                     }
 
@@ -131,7 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Firebase CRUD"),
+        title: const Text("Aducation System"),
+        centerTitle: true,
       ),
 
       body: Column(
@@ -145,17 +152,20 @@ class _HomeScreenState extends State<HomeScreen> {
               itemCount: filterOptions.length,
               itemBuilder: (context, index) {
                 String subj = filterOptions[index];
-                bool isSelected = selectedFilter == subj;
+                bool isSelected =
+                    selectedFilter == subj;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6),
                   child: ChoiceChip(
                     label: Text(subj),
                     selected: isSelected,
                     selectedColor: Colors.indigo,
                     labelStyle: TextStyle(
-                      color:
-                          isSelected ? Colors.white : Colors.black,
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.black,
                     ),
                     onSelected: (_) {
                       setState(() {
@@ -174,7 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
               stream: selectedFilter == "All"
                   ? firestore
                       .collection("questions")
-                      .orderBy("createdAt", descending: true)
+                      .orderBy("createdAt",
+                          descending: true)
                       .snapshots()
                   : firestore
                       .collection("questions")
@@ -184,13 +195,16 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(
-                      child: CircularProgressIndicator());
+                      child:
+                          CircularProgressIndicator());
                 }
 
-                final docs = snapshot.data!.docs;
+                final docs =
+                    snapshot.data!.docs;
 
                 if (docs.isEmpty) {
-                  return const Center(child: Text("No Data"));
+                  return const Center(
+                      child: Text("No Data"));
                 }
 
                 return ListView.builder(
@@ -199,82 +213,155 @@ class _HomeScreenState extends State<HomeScreen> {
                     final data = docs[i];
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      child: ListTile(
-                        title: Text(
-                          data["subject"],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.indigo,
+                      margin:
+                          const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6),
+                      shape:
+                          RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(
+                                15),
+                      ),
+                      elevation: 4,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(
+                                  15),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white,
+                              Colors.indigo
+                                  .shade50
+                            ],
                           ),
                         ),
-                        subtitle: Text(
-                          "Q: ${data["question"]}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: ListTile(
+                          contentPadding:
+                              const EdgeInsets
+                                  .symmetric(
+                                      horizontal:
+                                          16,
+                                      vertical:
+                                          12),
 
-                        // 👉 DETAILS PAGE
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => DetailsScreen(
-                                model: QuestionModel(
-                                  id: data.id,
-                                  subject: data["subject"],
-                                  question: data["question"],
-                                  answer: data["answer"],
-                                ),
-                                onEdit: (model) => _showForm(
-                                  model: model,
-                                  docId: data.id,
-                                ),
+                          // 🔹 SUBJECT
+                          title: Text(
+                            data["subject"],
+                            style:
+                                const TextStyle(
+                              fontWeight:
+                                  FontWeight.bold,
+                              color:
+                                  Colors.indigo,
+                              fontSize: 16,
+                            ),
+                          ),
+
+                          // 🔥 QUESTION STYLE
+                          subtitle: Padding(
+                            padding:
+                                const EdgeInsets
+                                    .only(top: 6),
+                            child: Text(
+                              "Q: ${data["question"]}",
+                              maxLines: 2,
+                              overflow:
+                                  TextOverflow
+                                      .ellipsis,
+                              style:
+                                  const TextStyle(
+                                fontSize: 16,
+                                fontWeight:
+                                    FontWeight
+                                        .bold,
+                                color:
+                                    Colors.red,
                               ),
                             ),
-                          );
-                        },
+                          ),
 
-                        // ❌ DELETE WITH CONFIRM
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete,
-                              color: Colors.red),
-                          onPressed: () async {
-                            bool? confirm = await showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  AlertDialog(
-                                title:
-                                    const Text("Confirm Delete"),
-                                content: const Text(
-                                    "Are you sure?"),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(
-                                            context, false),
-                                    child:
-                                        const Text("Cancel"),
+                          // 👉 DETAILS PAGE
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    DetailsScreen(
+                                  model:
+                                      QuestionModel(
+                                    id: data.id,
+                                    subject: data[
+                                        "subject"],
+                                    question: data[
+                                        "question"],
+                                    answer: data[
+                                        "answer"],
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () =>
-                                        Navigator.pop(
-                                            context, true),
-                                    child:
-                                        const Text("Delete"),
+                                  onEdit: (model) =>
+                                      _showForm(
+                                    model: model,
+                                    docId: data.id,
                                   ),
-                                ],
+                                ),
                               ),
                             );
-
-                            if (confirm == true) {
-                              await firestore
-                                  .collection("questions")
-                                  .doc(data.id)
-                                  .delete();
-                            }
                           },
+
+                          // ❌ DELETE
+                          trailing: IconButton(
+                            icon: const Icon(
+                                Icons.delete,
+                                color:
+                                    Colors.red),
+                            onPressed: () async {
+                              bool? confirm =
+                                  await showDialog(
+                                context:
+                                    context,
+                                builder:
+                                    (context) =>
+                                        AlertDialog(
+                                  title: const Text(
+                                      "Confirm Delete"),
+                                  content: const Text(
+                                      "Are you sure?"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () =>
+                                              Navigator.pop(
+                                                  context,
+                                                  false),
+                                      child:
+                                          const Text(
+                                              "Cancel"),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed:
+                                          () =>
+                                              Navigator.pop(
+                                                  context,
+                                                  true),
+                                      child:
+                                          const Text(
+                                              "Delete"),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm ==
+                                  true) {
+                                await firestore
+                                    .collection(
+                                        "questions")
+                                    .doc(data.id)
+                                    .delete();
+                              }
+                            },
+                          ),
                         ),
                       ),
                     );
@@ -287,7 +374,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       // ➕ ADD BUTTON
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton:
+          FloatingActionButton(
+        backgroundColor:
+            Colors.indigo,
         onPressed: () => _showForm(),
         child: const Icon(Icons.add),
       ),

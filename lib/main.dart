@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Firebase CRUD App',
+      title: 'Education System',
       debugShowCheckedModeBanner: false,
 
       theme: ThemeData(
