@@ -125,7 +125,7 @@ class DBHelper {
       // ✅ FIXED HERE
       
          FilePickerResult? result =
-    await FilePicker.platform.pickFiles();
+    await FilePicker().pickFiles();
 
       if (result == null) return false;
 
