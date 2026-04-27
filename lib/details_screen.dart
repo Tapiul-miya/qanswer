@@ -91,7 +91,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     setState(() {});
   }
 
-  // ================= ADD FONT (FINAL SAFE VERSION) =================
+  // ================= ADD FONT =================
   Future<void> addCustomFont() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -108,7 +108,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       if (bytes == null) return;
 
-      // ================= DB CHECK =================
       final existingFonts = await fontDB.getFonts();
 
       final isDuplicate = existingFonts.any((f) =>
@@ -119,35 +118,89 @@ class _DetailsScreenState extends State<DetailsScreen> {
         return;
       }
 
-      // ================= SAVE FILE =================
       final dir = await getApplicationDocumentsDirectory();
-
       final fontId = "font_${DateTime.now().millisecondsSinceEpoch}";
       final filePath = "${dir.path}/$fontId.ttf";
 
       final savedFile = File(filePath);
       await savedFile.writeAsBytes(bytes);
 
-      // ================= DB SAVE =================
       await fontDB.insertFont(fileName, filePath);
 
-      // ================= LOAD FONT =================
       final loader = FontLoader(fileName);
       loader.addFont(savedFile.readAsBytes().then(ByteData.sublistView));
       await loader.load();
 
-      // ================= UPDATE UI =================
       setState(() {
         customFonts.add(fileName);
         selectedFont = fileName;
       });
 
       await saveSettings();
-
       showMsg("Font added successfully");
     } catch (e) {
       showMsg("Font load failed");
     }
+  }
+
+  // ================= FONT PREVIEW =================
+  void showFontPreview(String fontName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? Colors.black : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Font Preview",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              Container(
+                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "The quick brown fox jumps over the lazy dog\n0123456789",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: fontName == "default" ? null : fontName,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              ElevatedButton(
+                onPressed: () {
+                  setState(() => selectedFont = fontName);
+                  saveSettings();
+                  Navigator.pop(context);
+                  showMsg("Font applied");
+                },
+                child: const Text("Use This Font"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -235,12 +288,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   DropdownButton<String>(
                     isExpanded: true,
                     value: selectedFont,
-                    items: allFonts
-                        .map((f) => DropdownMenuItem(
-                              value: f,
-                              child: Text(f),
-                            ))
-                        .toList(),
+                    items: allFonts.map((f) {
+                      return DropdownMenuItem(
+                        value: f,
+                        child: GestureDetector(
+                          onLongPress: () => showFontPreview(f),
+                          child: Text(f),
+                        ),
+                      );
+                    }).toList(),
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => selectedFont = val);
@@ -248,7 +304,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       }
                     },
                   ),
+
                   const SizedBox(height: 10),
+
                   Row(
                     children: [
                       const Text("Size"),
@@ -266,6 +324,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       Text(fontSize.toInt().toString()),
                     ],
                   ),
+
                   ElevatedButton(
                     onPressed: addCustomFont,
                     child: const Text("Add Font"),
@@ -302,6 +361,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               content: widget.model.question,
               color: Colors.red,
             ),
+
             buildBox(
               title: "ANSWER",
               content: widget.model.answer,
