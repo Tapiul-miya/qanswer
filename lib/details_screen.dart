@@ -39,10 +39,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     ScaffoldMessenger.of(context)
       ..removeCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
       );
   }
 
@@ -71,7 +68,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     showMsg("Copied");
   }
 
-  // ================= LOAD FONTS FROM DB =================
+  // ================= LOAD FONTS =================
   Future<void> loadFontsFromDB() async {
     final fonts = await fontDB.getFonts();
 
@@ -80,20 +77,21 @@ class _DetailsScreenState extends State<DetailsScreen> {
       final path = f['path'];
 
       final file = File(path);
-
       if (await file.exists()) {
         final loader = FontLoader(name);
         loader.addFont(file.readAsBytes().then(ByteData.sublistView));
         await loader.load();
 
-        customFonts.add(name);
+        if (!customFonts.contains(name)) {
+          customFonts.add(name);
+        }
       }
     }
 
     setState(() {});
   }
 
-  // ================= ADD FONT =================
+  // ================= ADD FONT (FINAL SAFE VERSION) =================
   Future<void> addCustomFont() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -104,28 +102,44 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       if (result == null || result.files.isEmpty) return;
 
-      final bytes = result.files.first.bytes;
+      final file = result.files.first;
+      final bytes = file.bytes;
+      final fileName = file.name.trim().toLowerCase();
+
       if (bytes == null) return;
 
+      // ================= DB CHECK =================
+      final existingFonts = await fontDB.getFonts();
+
+      final isDuplicate = existingFonts.any((f) =>
+          f['name'].toString().trim().toLowerCase() == fileName);
+
+      if (isDuplicate || customFonts.contains(fileName)) {
+        showMsg("Font already exists");
+        return;
+      }
+
+      // ================= SAVE FILE =================
       final dir = await getApplicationDocumentsDirectory();
 
-      final fontName =
-          "CustomFont_${DateTime.now().millisecondsSinceEpoch}";
+      final fontId = "font_${DateTime.now().millisecondsSinceEpoch}";
+      final filePath = "${dir.path}/$fontId.ttf";
 
-      final filePath = "${dir.path}/$fontName.ttf";
+      final savedFile = File(filePath);
+      await savedFile.writeAsBytes(bytes);
 
-      final file = File(filePath);
-      await file.writeAsBytes(bytes);
+      // ================= DB SAVE =================
+      await fontDB.insertFont(fileName, filePath);
 
-      await fontDB.insertFont(fontName, filePath);
-
-      final loader = FontLoader(fontName);
-      loader.addFont(file.readAsBytes().then(ByteData.sublistView));
+      // ================= LOAD FONT =================
+      final loader = FontLoader(fileName);
+      loader.addFont(savedFile.readAsBytes().then(ByteData.sublistView));
       await loader.load();
 
+      // ================= UPDATE UI =================
       setState(() {
-        customFonts.add(fontName);
-        selectedFont = fontName;
+        customFonts.add(fileName);
+        selectedFont = fileName;
       });
 
       await saveSettings();
@@ -143,7 +157,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     loadSettings();
   }
 
-  // ================= BOX UI =================
+  // ================= UI BOX =================
   Widget buildBox({
     required String title,
     required String content,
@@ -163,13 +177,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
+            Text(title,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 6),
             SelectableText(
               content,
@@ -192,7 +202,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
-
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : Colors.indigo,
         title: const Text("Question Details"),
@@ -210,12 +219,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // ================= FONT PANEL =================
             Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 15),
@@ -238,13 +245,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       if (val != null) {
                         setState(() => selectedFont = val);
                         saveSettings();
-                        showMsg("Font changed");
                       }
                     },
                   ),
-
                   const SizedBox(height: 10),
-
                   Row(
                     children: [
                       const Text("Size"),
@@ -262,7 +266,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       Text(fontSize.toInt().toString()),
                     ],
                   ),
-
                   ElevatedButton(
                     onPressed: addCustomFont,
                     child: const Text("Add Font"),
@@ -271,7 +274,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ),
             ),
 
-            // ================= SUBJECT =================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(15),
@@ -287,10 +289,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 widget.model.subject,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
               ),
             ),
 
@@ -301,7 +302,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
               content: widget.model.question,
               color: Colors.red,
             ),
-
             buildBox(
               title: "ANSWER",
               content: widget.model.answer,
