@@ -1,21 +1,32 @@
 class QuestionModel {
-  int? id;
+  String? id;
   String subject;
   String question;
   String answer;
 
-  QuestionModel({this.id, required this.subject, required this.question, required this.answer});
+  QuestionModel({
+    this.id,
+    required this.subject,
+    required this.question,
+    required this.answer,
+  });
 
-  Map<String, dynamic> toMap() {
-    return {'id': id, 'subject': subject, 'question': question, 'answer': answer};
+  // 🔄 Convert Firestore → Model
+  factory QuestionModel.fromMap(Map<String, dynamic> map, String docId) {
+    return QuestionModel(
+      id: docId,
+      subject: map['subject'] ?? '',
+      question: map['question'] ?? '',
+      answer: map['answer'] ?? '',
+    );
   }
 
-  factory QuestionModel.fromMap(Map<String, dynamic> map) {
-    return QuestionModel(
-      id: map['id'],
-      subject: map['subject'],
-      question: map['question'],
-      answer: map['answer'],
-    );
+  // 🔄 Convert Model → Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'subject': subject,
+      'question': question,
+      'answer': answer,
+    };
   }
 }
