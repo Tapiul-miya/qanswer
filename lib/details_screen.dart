@@ -27,7 +27,10 @@ class DetailsScreen extends StatefulWidget {
 
 class _DetailsScreenState extends State<DetailsScreen> {
   bool isDark = false;
-  String selectedFont = "default";
+
+  String selectedFont = "default";   // FINAL APPLY FONT
+  String previewFont = "default";    // PREVIEW ONLY
+
   double fontSize = 15;
 
   final List<String> customFonts = [];
@@ -57,6 +60,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
     setState(() {
       selectedFont = prefs.getString('selectedFont') ?? "default";
+      previewFont = selectedFont;
       fontSize = prefs.getDouble('fontSize') ?? 15;
       isDark = prefs.getBool('isDark') ?? false;
     });
@@ -104,40 +108,37 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       final file = result.files.first;
       final bytes = file.bytes;
-      final fileName = file.name.trim().toLowerCase();
 
       if (bytes == null) return;
 
+      final fontName = "font_${DateTime.now().millisecondsSinceEpoch}";
+
       final existingFonts = await fontDB.getFonts();
+      final isDuplicate = existingFonts.any((f) => f['name'] == fontName);
 
-      final isDuplicate = existingFonts.any((f) =>
-          f['name'].toString().trim().toLowerCase() == fileName);
-
-      if (isDuplicate || customFonts.contains(fileName)) {
+      if (isDuplicate) {
         showMsg("Font already exists");
         return;
       }
 
       final dir = await getApplicationDocumentsDirectory();
-      final fontId = "font_${DateTime.now().millisecondsSinceEpoch}";
-      final filePath = "${dir.path}/$fontId.ttf";
+      final filePath = "${dir.path}/$fontName.ttf";
 
       final savedFile = File(filePath);
       await savedFile.writeAsBytes(bytes);
 
-      await fontDB.insertFont(fileName, filePath);
+      await fontDB.insertFont(fontName, filePath);
 
-      final loader = FontLoader(fileName);
+      final loader = FontLoader(fontName);
       loader.addFont(savedFile.readAsBytes().then(ByteData.sublistView));
       await loader.load();
 
       setState(() {
-        customFonts.add(fileName);
-        selectedFont = fileName;
+        customFonts.add(fontName);
+        previewFont = fontName;
       });
 
-      await saveSettings();
-      showMsg("Font added successfully");
+      showMsg("Font added");
     } catch (e) {
       showMsg("Font load failed");
     }
@@ -151,25 +152,20 @@ class _DetailsScreenState extends State<DetailsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (_) {
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "Font Preview",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
+              const Text("Font Preview",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
               const SizedBox(height: 15),
 
               Container(
-                padding: const EdgeInsets.all(12),
                 width: double.infinity,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(12),
@@ -180,7 +176,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontFamily: fontName == "default" ? null : fontName,
-                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
               ),
@@ -189,7 +184,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
               ElevatedButton(
                 onPressed: () {
-                  setState(() => selectedFont = fontName);
+                  setState(() {
+                    selectedFont = fontName;
+                    previewFont = fontName;
+                  });
                   saveSettings();
                   Navigator.pop(context);
                   showMsg("Font applied");
@@ -210,7 +208,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     loadSettings();
   }
 
-  // ================= UI BOX =================
+  // ================= BOX =================
   Widget buildBox({
     required String title,
     required String content,
@@ -233,7 +231,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
             Text(title,
                 style: TextStyle(
                     fontWeight: FontWeight.bold, color: color)),
+
             const SizedBox(height: 6),
+
             SelectableText(
               content,
               style: TextStyle(
@@ -255,6 +255,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
+
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : Colors.indigo,
         title: const Text("Question Details"),
@@ -272,10 +273,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // ================= FONT PANEL =================
             Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 15),
@@ -287,7 +290,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 children: [
                   DropdownButton<String>(
                     isExpanded: true,
-                    value: selectedFont,
+                    value: previewFont,
                     items: allFonts.map((f) {
                       return DropdownMenuItem(
                         value: f,
@@ -299,8 +302,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     }).toList(),
                     onChanged: (val) {
                       if (val != null) {
-                        setState(() => selectedFont = val);
-                        saveSettings();
+                        setState(() {
+                          previewFont = val; // ONLY PREVIEW
+                        });
                       }
                     },
                   ),
@@ -333,6 +337,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ),
             ),
 
+            // ================= SUBJECT =================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(15),
@@ -348,9 +353,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 widget.model.subject,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
 
