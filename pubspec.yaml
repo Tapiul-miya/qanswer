@@ -25,6 +25,9 @@ dependencies:
   firebase_core: ^4.7.0
   cloud_firestore: ^6.3.0
 
+  # 🔥 LOCAL STORAGE (FOR FONT / THEME / SETTINGS SAVE)
+  shared_preferences: ^2.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -32,37 +35,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # =========================
-  # ASSETS (ONLY FOR BUNDLED FILES)
-  # =========================
-  assets:
-    - assets/fonts/
-
-  # =========================
-  # BUILT-IN FONTS
-  # =========================
-  fonts:
-    - family: FNArafatNoakhaliItalic
-      fonts:
-        - asset: assets/fonts/FNArafatNoakhali-Italic.ttf
-
-    - family: FNArafatNoakhaliRegular
-      fonts:
-        - asset: assets/fonts/FNArafatNoakhali-Regular.ttf
-
-    - family: FNArafatNoakhaliANSIV1Italic
-      fonts:
-        - asset: assets/fonts/FNArafatNoakhaliANSIV1-Italic.ttf
-
-    - family: FNArafatNoakhaliANSIV1Regular
-      fonts:
-        - asset: assets/fonts/FNArafatNoakhaliANSIV1-Regular.ttf
-
-    - family: FNArafatNoakhaliANSIV2Italic
-      fonts:
-        - asset: assets/fonts/FNArafatNoakhaliANSIV2-Italic.ttf
-
-    - family: FNArafatNoakhaliANSIV2Regular
-      fonts:
-        - asset: assets/fonts/FNArafatNoakhaliANSIV2-Regular.ttf

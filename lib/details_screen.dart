@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/question_model.dart';
 import 'font_db.dart';
@@ -26,21 +27,10 @@ class DetailsScreen extends StatefulWidget {
 
 class _DetailsScreenState extends State<DetailsScreen> {
   bool isDark = false;
-
   String selectedFont = "default";
-
   double fontSize = 15;
 
-  final List<String> builtInFonts = [
-    "FNArafatNoakhali-Italic",
-    "FNArafatNoakhali-Regular",
-    "FNArafatNoakhaliANSIV1-Italic",
-    "FNArafatNoakhaliANSIV1-Regular",
-    "FNArafatNoakhaliANSIV2-Italic",
-  ];
-
   final List<String> customFonts = [];
-
   final FontDB fontDB = FontDB();
 
   // ================= SNACKBAR =================
@@ -54,6 +44,25 @@ class _DetailsScreenState extends State<DetailsScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+  }
+
+  // ================= SAVE SETTINGS =================
+  Future<void> saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedFont', selectedFont);
+    await prefs.setDouble('fontSize', fontSize);
+    await prefs.setBool('isDark', isDark);
+  }
+
+  // ================= LOAD SETTINGS =================
+  Future<void> loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      selectedFont = prefs.getString('selectedFont') ?? "default";
+      fontSize = prefs.getDouble('fontSize') ?? 15;
+      isDark = prefs.getBool('isDark') ?? false;
+    });
   }
 
   // ================= COPY =================
@@ -108,7 +117,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
       final file = File(filePath);
       await file.writeAsBytes(bytes);
 
-      // SAVE TO DB
       await fontDB.insertFont(fontName, filePath);
 
       final loader = FontLoader(fontName);
@@ -120,17 +128,19 @@ class _DetailsScreenState extends State<DetailsScreen> {
         selectedFont = fontName;
       });
 
+      await saveSettings();
+
       showMsg("Font added successfully");
     } catch (e) {
       showMsg("Font load failed");
     }
   }
 
-  // ================= INIT =================
   @override
   void initState() {
     super.initState();
     loadFontsFromDB();
+    loadSettings();
   }
 
   // ================= BOX UI =================
@@ -178,11 +188,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allFonts = [
-      "default",
-      ...builtInFonts,
-      ...customFonts,
-    ];
+    final allFonts = ["default", ...customFonts];
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
@@ -193,7 +199,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
         actions: [
           Switch(
             value: isDark,
-            onChanged: (v) => setState(() => isDark = v),
+            onChanged: (v) {
+              setState(() => isDark = v);
+              saveSettings();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.edit),
@@ -228,6 +237,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => selectedFont = val);
+                        saveSettings();
                         showMsg("Font changed");
                       }
                     },
@@ -243,8 +253,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           min: 12,
                           max: 30,
                           value: fontSize,
-                          onChanged: (v) =>
-                              setState(() => fontSize = v),
+                          onChanged: (v) {
+                            setState(() => fontSize = v);
+                            saveSettings();
+                          },
                         ),
                       ),
                       Text(fontSize.toInt().toString()),
