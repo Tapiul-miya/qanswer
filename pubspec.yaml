@@ -21,7 +21,7 @@ dependencies:
   share_plus: any
 
   # ব্যাকআপ ফাইল সিলেক্ট বা ইমপোর্ট করার জন্য
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_test:
