@@ -204,6 +204,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   title,
@@ -212,6 +213,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     color: color,
                   ),
                 ),
+                if (extraWidget != null) extraWidget,
               ],
             ),
             const SizedBox(height: 6),
@@ -237,7 +239,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
         backgroundColor: isDark ? Colors.black : Colors.indigo,
-        title: Text(widget.model.subject), // ✅ SUBJECT HERE
+        title: const Text("Question Details"),
         actions: [
           Switch(
             value: isDark,
@@ -288,6 +290,28 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 title: "QUESTION",
                 content: widget.model.question,
                 color: Colors.red,
+                extraWidget: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.08)
+                        : Colors.black.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.15)
+                          : Colors.black.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Text(
+                    widget.model.subject,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ),
               ),
 
               buildBox(
