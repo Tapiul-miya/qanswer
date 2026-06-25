@@ -156,16 +156,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
                 TextField(
-                  controller: quesController,
-                  decoration:
-                      const InputDecoration(labelText: "Question"),
-                ),
+  controller: quesController,
+  decoration: const InputDecoration(labelText: "Question"),
+  keyboardType: TextInputType.multiline,
+  textInputAction: TextInputAction.newline,
+  maxLines: null,
+  minLines: 3,
+),
 
-                TextField(
-                  controller: ansController,
-                  decoration:
-                      const InputDecoration(labelText: "Answer"),
-                ),
+TextField(
+  controller: ansController,
+  decoration: const InputDecoration(labelText: "Answer"),
+  keyboardType: TextInputType.multiline,
+  textInputAction: TextInputAction.newline,
+  maxLines: null,
+  minLines: 3,
+),
 
                 const SizedBox(height: 15),
 
