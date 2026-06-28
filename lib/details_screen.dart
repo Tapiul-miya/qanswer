@@ -184,6 +184,81 @@ class _DetailsScreenState extends State<DetailsScreen> {
     loadSettings();
   }
 
+
+   Widget buildMixedText(String text) {
+  // যদি কোনো LaTeX না থাকে তাহলে সাধারণ Text দেখাও
+  if (!text.contains(r'\(')) {
+    return SelectableText(
+      text,
+      style: TextStyle(
+        fontSize: fontSize,
+        fontFamily: selectedFont == "default" ? null : selectedFont,
+        color: isDark ? Colors.white70 : Colors.black87,
+      ),
+    );
+  }
+
+  final regex = RegExp(r'\\\((.*?)\\\)', dotAll: true);
+  final matches = regex.allMatches(text);
+
+  List<InlineSpan> spans = [];
+  int last = 0;
+
+  for (final match in matches) {
+    // Math-এর আগের Text
+    if (match.start > last) {
+      spans.add(
+        TextSpan(
+          text: text.substring(last, match.start),
+          style: TextStyle(
+            fontSize: fontSize,
+            fontFamily: selectedFont == "default" ? null : selectedFont,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+      );
+    }
+
+    // Math অংশ
+    spans.add(
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Math.tex(
+          match.group(1)!,
+          textStyle: TextStyle(
+            fontSize: fontSize,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+      ),
+    );
+
+    last = match.end;
+  }
+
+  // শেষের Text
+  if (last < text.length) {
+    spans.add(
+      TextSpan(
+        text: text.substring(last),
+        style: TextStyle(
+          fontSize: fontSize,
+          fontFamily: selectedFont == "default" ? null : selectedFont,
+          color: isDark ? Colors.white70 : Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  return SelectableText.rich(
+    TextSpan(children: spans),
+  );
+}
+
+
+
+
+
   Widget buildBox({
     required String title,
     required String content,
@@ -219,13 +294,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
             
             
             widget.model.subject == "Mathematics"
-    ? Math.tex(
-        content,
-        textStyle: TextStyle(
-          fontSize: fontSize,
-          color: isDark ? Colors.white70 : Colors.black87,
-        ),
-      )
+    ? buildMixedText(content)
     : SelectableText(
         content,
         style: TextStyle(

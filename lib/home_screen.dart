@@ -168,9 +168,79 @@ bool isRefreshing = false;
     );
     return false;
   }
+ 
+    
+  }
+
+
+
+
+  Widget buildMixedText(String text) {
+  // যদি কোনো LaTeX না থাকে
+  if (!text.contains(r'\(')) {
+    return SelectableText(
+      text,
+      style: const TextStyle(
+        color: Colors.red,
+        fontWeight: FontWeight.bold,
+        fontSize: 18,
+      ),
+    );
+  }
+
+  final regex = RegExp(r'\\\((.*?)\\\)', dotAll: true);
+  final matches = regex.allMatches(text);
+
+  List<InlineSpan> spans = [];
+  int last = 0;
+
+  for (final match in matches) {
+    if (match.start > last) {
+      spans.add(
+        TextSpan(
+          text: text.substring(last, match.start),
+          style: const TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+      );
+    }
+
+    spans.add(
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Math.tex(
+          match.group(1)!,
+          textStyle: const TextStyle(
+            color: Colors.red,
+            fontSize: 18,
+          ),
+        ),
+      ),
+    );
+
+    last = match.end;
+  }
+
+  if (last < text.length) {
+    spans.add(
+      TextSpan(
+        text: text.substring(last),
+        style: const TextStyle(
+          color: Colors.red,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+      )
+    );
+  }
+
+  return RichText(
+    text: TextSpan(children: spans),
+  );
 }
-
-
 
 
 
@@ -274,14 +344,15 @@ bool isRefreshing = false;
       border: Border.all(color: Colors.grey),
       borderRadius: BorderRadius.circular(10),
     ),
+    
+    
+    
     child: quesController.text.isEmpty
-        ? const Text("Start typing...")
-        : SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Math.tex(
-              quesController.text,
-            ),
-          ),
+    ? const Text("Start typing...")
+    : buildMixedText(quesController.text),
+          
+          
+          
   ),
 
   const SizedBox(height: 10),
@@ -324,14 +395,14 @@ if (selectedSubject == "Mathematics") ...[
       border: Border.all(color: Colors.grey),
       borderRadius: BorderRadius.circular(10),
     ),
+    
+    
     child: ansController.text.isEmpty
-        ? const Text("Start typing...")
-        : SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Math.tex(
-              ansController.text,
-            ),
-          ),
+    ? const Text("Start typing...")
+    : buildMixedText(ansController.text),
+          
+          
+          
   ),
 
   const SizedBox(height: 10),
@@ -657,15 +728,12 @@ if (confirm == true) {
                             
                             subtitle: Padding(
   padding: const EdgeInsets.only(top: 6),
+  
+  
   child: model.subject == "Mathematics"
-      ? Math.tex(
-  model.question,
-  textStyle: const TextStyle(
-    color: Colors.red,
-    fontWeight: FontWeight.bold,
-    fontSize: 18,
-  ),
-)
+    ? buildMixedText(model.question)
+    
+    
       : Text(
           "Q: ${model.question}",
           maxLines: 3,
