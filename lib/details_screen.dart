@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 
 import 'models/question_model.dart';
 import 'font_db.dart';
@@ -215,14 +216,27 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ],
             ),
             const SizedBox(height: 6),
-            SelectableText(
-              content,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontFamily: selectedFont == "default" ? null : selectedFont,
-                color: isDark ? Colors.white70 : Colors.black87,
-              ),
-            ),
+            
+            
+            widget.model.subject == "Mathematics"
+    ? Math.tex(
+        content,
+        textStyle: TextStyle(
+          fontSize: fontSize,
+          color: isDark ? Colors.white70 : Colors.black87,
+        ),
+      )
+    : SelectableText(
+        content,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontFamily:
+              selectedFont == "default" ? null : selectedFont,
+          color: isDark ? Colors.white70 : Colors.black87,
+        ),
+      ),
+            
+            
           ],
         ),
       ),
@@ -246,10 +260,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               saveSettings();
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => widget.onEdit(widget.model),
-          ),
+          
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == "add_font") {

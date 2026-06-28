@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+
 import 'models/question_model.dart';
 import 'details_screen.dart';
 
@@ -12,6 +14,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final firestore = FirebaseFirestore.instance;
+
+bool isRefreshing = false;
 
   final List<String> subjects = [
   "Bangla",
@@ -98,6 +102,79 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
+
+
+  Future<bool> _verifyPassword() async {
+  final passwordController = TextEditingController();
+
+  final enteredPassword = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Password Required"),
+      content: TextField(
+        controller: passwordController,
+        obscureText: true,
+        decoration: const InputDecoration(
+          hintText: "Enter Password",
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(
+              context,
+              passwordController.text.trim(),
+            );
+          },
+          child: const Text("OK"),
+        ),
+      ],
+    ),
+  );
+
+  if (enteredPassword == null) return false;
+
+  try {
+    final passwordDoc = await firestore
+        .collection("settings")
+        .doc("delete_password")
+        .get();
+
+    if (!passwordDoc.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password not found")),
+      );
+      return false;
+    }
+
+    final savedPassword = passwordDoc["password"].toString();
+
+    if (enteredPassword != savedPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Wrong Password")),
+      );
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+    return false;
+  }
+}
+
+
+
+
+
+
   void _showForm({QuestionModel? model, String? docId}) {
     String selectedSubject = model?.subject ?? subjects.first;
     String selectedCls = model?.className ?? "1";
@@ -151,18 +228,67 @@ class _HomeScreenState extends State<HomeScreen> {
                       .map((s) => DropdownMenuItem(
                           value: s, child: Text(s)))
                       .toList(),
-                  onChanged: (val) =>
-                      setModalState(() => selectedSubject = val!),
+                      
+                  onChanged: (val) {
+                  setModalState(() {
+                  selectedSubject = val!;
+                   });
+                  },
+                      
                 ),
+                
+                
 
-                TextField(
+                
+  TextField(
   controller: quesController,
   decoration: const InputDecoration(labelText: "Question"),
   keyboardType: TextInputType.multiline,
   textInputAction: TextInputAction.newline,
   maxLines: null,
   minLines: 3,
+  onChanged: (_) {
+    setModalState(() {});
+  },
 ),
+
+   if (selectedSubject == "Mathematics") ...[
+  const SizedBox(height: 10),
+
+  const Align(
+    alignment: Alignment.centerLeft,
+    child: Text(
+      "Preview",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  ),
+
+  const SizedBox(height: 8),
+
+  Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.grey),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: quesController.text.isEmpty
+        ? const Text("Start typing...")
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Math.tex(
+              quesController.text,
+            ),
+          ),
+  ),
+
+  const SizedBox(height: 10),
+],
+
+
+
 
 TextField(
   controller: ansController,
@@ -171,7 +297,45 @@ TextField(
   textInputAction: TextInputAction.newline,
   maxLines: null,
   minLines: 3,
+  onChanged: (_) {
+    setModalState(() {});
+  },
 ),
+
+if (selectedSubject == "Mathematics") ...[
+  const SizedBox(height: 10),
+
+  const Align(
+    alignment: Alignment.centerLeft,
+    child: Text(
+      "Answer Preview",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  ),
+
+  const SizedBox(height: 8),
+
+  Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.grey),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: ansController.text.isEmpty
+        ? const Text("Start typing...")
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Math.tex(
+              ansController.text,
+            ),
+          ),
+  ),
+
+  const SizedBox(height: 10),
+],
 
                 const SizedBox(height: 15),
 
@@ -242,6 +406,57 @@ TextField(
         title: Text("Class $selectedClass"),
         centerTitle: true,
         actions: [
+          
+          isRefreshing
+    ? const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
+        ),
+      )
+    : IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: () async {
+          setState(() {
+            isRefreshing = true;
+          });
+
+          try {
+            await firestore
+                .collection("questions")
+                .get(const GetOptions(source: Source.server));
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Data refreshed"),
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Internet slow or unavailable"),
+                ),
+              );
+            }
+          } finally {
+            if (mounted) {
+              setState(() {
+                isRefreshing = false;
+              });
+            }
+          }
+        },
+      ),
+          
+          
           PopupMenuButton<String>(
             onSelected: (value) {
               setState(() {
@@ -319,45 +534,101 @@ TextField(
                     final color = getSubjectColor(model.subject);
 
                     return GestureDetector(
+                    
+                    
+                    
+                    
+                    
                       onLongPress: () async {
-                        final confirm = await showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Confirm Delete"),
-                            content: const Text(
-                                "Are you sure you want to delete this question?"),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(context, false),
-                                child: const Text("Cancel"),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                ),
-                                onPressed: () =>
-                                    Navigator.pop(context, true),
-                                child: const Text("Delete"),
-                              ),
-                            ],
-                          ),
-                        );
+  final action = await showModalBottomSheet<String>(
+    context: context,
+    builder: (context) => SafeArea(
+      child: Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text("Edit"),
+            onTap: () => Navigator.pop(context, "edit"),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete, color: Colors.red),
+            title: const Text(
+              "Delete",
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () => Navigator.pop(context, "delete"),
+          ),
+        ],
+      ),
+    ),
+  );
 
-                        if (confirm == true) {
-                          await firestore
-                              .collection("questions")
-                              .doc(model.id)
-                              .delete();
+  if (action == "edit") {
+  if (await _verifyPassword()) {
+    _showForm(
+      model: model,
+      docId: model.id,
+    );
+  }
+  return;
+}
 
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Deleted successfully")),
-                            );
-                          }
-                        }
-                      },
+
+  
+
+  // ===== নিচে আপনার আগের Delete Code =====
+
+  if (action != "delete") return;
+
+  if (!await _verifyPassword()) return;
+
+final confirm = await showDialog<bool>(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: const Text("Confirm Delete"),
+    content: const Text(
+      "Are you sure you want to delete this question?",
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context, false),
+        child: const Text("Cancel"),
+      ),
+      ElevatedButton(
+        onPressed: () => Navigator.pop(context, true),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+        ),
+        child: const Text("Delete"),
+      ),
+    ],
+  ),
+);
+
+if (confirm == true) {
+  await firestore
+      .collection("questions")
+      .doc(model.id)
+      .delete();
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Deleted successfully")),
+  );
+}
+
+  
+  
+  
+  
+  
+},
+
+
+
+                      
+                      
+                      
+                      
                       child: Card(
                         margin: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -382,17 +653,32 @@ TextField(
                                   fontWeight: FontWeight.bold,
                                   color: color),
                             ),
+                            
+                            
                             subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                "Q: ${model.question}",
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
+  padding: const EdgeInsets.only(top: 6),
+  child: model.subject == "Mathematics"
+      ? Math.tex(
+  model.question,
+  textStyle: const TextStyle(
+    color: Colors.red,
+    fontWeight: FontWeight.bold,
+    fontSize: 18,
+  ),
+)
+      : Text(
+          "Q: ${model.question}",
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+),
+                            
+                            
+                            
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -419,7 +705,11 @@ TextField(
 
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.indigo,
-        onPressed: () => _showForm(),
+        onPressed: () async {
+  if (await _verifyPassword()) {
+    _showForm();
+  }
+},
         child: const Icon(Icons.add),
       ),
     );
