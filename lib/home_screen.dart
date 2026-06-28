@@ -177,7 +177,7 @@ bool isRefreshing = false;
 
   Widget buildMixedText(String text) {
   // যদি কোনো LaTeX না থাকে
-  if (!text.contains(r'\(')) {
+  if (!text.contains(r'\(') && !text.contains(r'\[')) {
     return SelectableText(
       text,
       style: const TextStyle(
@@ -188,7 +188,11 @@ bool isRefreshing = false;
     );
   }
 
-  final regex = RegExp(r'\\\((.*?)\\\)', dotAll: true);
+  final regex = RegExp(
+  r'\\\((.*?)\\\)|\\\[(.*?)\\\]',
+  dotAll: true,
+  );
+  
   final matches = regex.allMatches(text);
 
   List<InlineSpan> spans = [];
@@ -208,18 +212,21 @@ bool isRefreshing = false;
       );
     }
 
-    spans.add(
-      WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: Math.tex(
-          match.group(1)!,
-          textStyle: const TextStyle(
-            color: Colors.red,
-            fontSize: 18,
-          ),
-        ),
+    final latex = match.group(1) ?? match.group(2)!;
+
+spans.add(
+  WidgetSpan(
+    alignment: PlaceholderAlignment.middle,
+    child: Math.tex(
+      latex,
+      mathStyle: MathStyle.display,
+      textStyle: const TextStyle(
+        color: Colors.red,
+        fontSize: 18,
       ),
-    );
+    ),
+  ),
+);
 
     last = match.end;
   }

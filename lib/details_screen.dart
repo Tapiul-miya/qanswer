@@ -185,9 +185,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
 
+
+
+
+
    Widget buildMixedText(String text) {
   // যদি কোনো LaTeX না থাকে তাহলে সাধারণ Text দেখাও
-  if (!text.contains(r'\(')) {
+  if (!text.contains(r'\(') && !text.contains(r'\[')) {
     return SelectableText(
       text,
       style: TextStyle(
@@ -198,7 +202,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
-  final regex = RegExp(r'\\\((.*?)\\\)', dotAll: true);
+  final regex = RegExp(
+    r'\\\((.*?)\\\)|\\\[(.*?)\\\]',
+    dotAll: true,
+  );
+
   final matches = regex.allMatches(text);
 
   List<InlineSpan> spans = [];
@@ -220,11 +228,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
     }
 
     // Math অংশ
+    final latex = match.group(1) ?? match.group(2)!;
+
     spans.add(
       WidgetSpan(
         alignment: PlaceholderAlignment.middle,
         child: Math.tex(
-          match.group(1)!,
+          latex,
+          mathStyle: MathStyle.display,
           textStyle: TextStyle(
             fontSize: fontSize,
             color: isDark ? Colors.white70 : Colors.black87,
@@ -254,6 +265,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
     TextSpan(children: spans),
   );
 }
+
+
+
+
 
 
 
