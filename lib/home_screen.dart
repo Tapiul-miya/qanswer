@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
 bool isRefreshing = false;
 
   final List<String> subjects = [
+  "No Subject",
   "Bangla",
   "English",
   "Hindi",
@@ -33,11 +34,12 @@ bool isRefreshing = false;
   "Geography",
   "Civics",
   "Computer",
-  "Environmental Studies"
+  "Environmental Studies",
+  "Religious Studies"
 ];
 
   String selectedFilter = "All";
-  String selectedClass = "1";
+  String selectedClass = "Nursery";
 
   Color getSubjectColor(String subject) {
   switch (subject) {
@@ -254,7 +256,7 @@ spans.add(
 
   void _showForm({QuestionModel? model, String? docId}) {
     String selectedSubject = model?.subject ?? subjects.first;
-    String selectedCls = model?.className ?? "1";
+    String selectedCls = model?.className ?? "Pre-Nursery";
 
     final quesController =
         TextEditingController(text: model?.question ?? "");
@@ -262,6 +264,8 @@ spans.add(
         TextEditingController(text: model?.answer ?? "");
 
     bool isSaving = false;
+    
+    bool showPreview = true;
 
     showModalBottomSheet(
       context: context,
@@ -269,31 +273,56 @@ spans.add(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      
+      
+      
+      
+      
       builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Text(
-                  model == null ? "Add Question" : "Update Question",
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
+  builder: (context, setModalState) => Padding(
+    padding: EdgeInsets.only(
+      bottom: MediaQuery.of(context).viewInsets.bottom,
+    ),
+    child: SizedBox(
+      height: MediaQuery.of(context).size.height * 0.9,
+      child: Column(
+        children: [
 
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              child: Column(
+                  
+              children: [
+                
+              Text(
+              model == null ? "Add Question" : "Update Question",
+              style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              ),
+              ),
+
+              const SizedBox(height: 10),
+
+
+
+
+
+        const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   value: selectedCls,
                   decoration: const InputDecoration(labelText: "Class"),
-                  items: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-                      .map((c) => DropdownMenuItem(
-                          value: c, child: Text("Class $c")))
-                      .toList(),
+                  items: ["Pre-Nursery", "Nursery", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "No-Class"]
+                  
+                  .map((c) => DropdownMenuItem(
+                  value: c,
+                  child: Text(c == "Pre-Nursery" || c == "Nursery"
+                  ? c
+                  : "Class $c"),
+                  ))
+                  .toList(),
+                      
                   onChanged: (val) =>
                       setModalState(() => selectedCls = val!),
                 ),
@@ -317,30 +346,44 @@ spans.add(
                 
 
                 
-  TextField(
-  controller: quesController,
-  decoration: const InputDecoration(labelText: "Question"),
-  keyboardType: TextInputType.multiline,
-  textInputAction: TextInputAction.newline,
-  maxLines: null,
-  minLines: 3,
-  onChanged: (_) {
-    setModalState(() {});
-  },
-),
-
-   if (selectedSubject == "Mathematics") ...[
-  const SizedBox(height: 10),
-
-  const Align(
-    alignment: Alignment.centerLeft,
-    child: Text(
-      "Preview",
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-      ),
-    ),
+        TextField(
+        controller: quesController,
+        decoration: const InputDecoration(labelText: "Question"),
+        keyboardType: TextInputType.multiline,
+        textInputAction: TextInputAction.newline,
+        maxLines: null,
+        minLines: 3,
+        onChanged: (_) {
+        setModalState(() {});
+        },
+        ),
+        
+        if (selectedSubject == "Mathematics")
+  SwitchListTile(
+    contentPadding: EdgeInsets.zero,
+    title: const Text("Show Preview"),
+    value: showPreview,
+    onChanged: (value) {
+      setModalState(() {
+        showPreview = value;
+      });
+    },
   ),
+        
+
+        if (selectedSubject == "Mathematics" && showPreview) ...[
+          
+        const SizedBox(height: 10),
+
+        const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+        "Preview",
+         style: TextStyle(
+        fontWeight: FontWeight.bold,
+         ),
+        ),
+        ),
 
   const SizedBox(height: 8),
 
@@ -380,7 +423,7 @@ TextField(
   },
 ),
 
-if (selectedSubject == "Mathematics") ...[
+if (selectedSubject == "Mathematics" && showPreview) ...[
   const SizedBox(height: 10),
 
   const Align(
@@ -413,67 +456,103 @@ if (selectedSubject == "Mathematics") ...[
   ),
 
   const SizedBox(height: 10),
-],
+  ],
 
-                const SizedBox(height: 15),
+  ],
+              
+              
+  ),
+  ),
+  ),
 
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          setModalState(() {
-                            isSaving = true;
-                          });
+          SafeArea(
+        top: false,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          child: ElevatedButton(
+            onPressed: isSaving
+                ? null
+                : () async {
+                    setModalState(() {
+                      isSaving = true;
+                    });
 
-                          final data = QuestionModel(
-                            subject: selectedSubject,
-                            question: quesController.text.trim(),
-                            answer: ansController.text.trim(),
-                            className: selectedCls,
-                          );
+                    final data = QuestionModel(
+                      subject: selectedSubject,
+                      question: quesController.text.trim(),
+                      answer: ansController.text.trim(),
+                      className: selectedCls,
+                    );
 
-                          try {
-                            if (model == null) {
-                              await firestore
-                                  .collection("questions")
-                                  .add({
-                                ...data.toMap(),
-                                "createdAt": Timestamp.now(),
-                              });
-                            } else {
-                              await firestore
-                                  .collection("questions")
-                                  .doc(docId)
-                                  .update(data.toMap());
-                            }
+                    try {
+                      if (model == null) {
+                        await firestore
+                            .collection("questions")
+                            .add({
+                          ...data.toMap(),
+                          "createdAt": Timestamp.now(),
+                        });
+                      } else {
+                        await firestore
+                            .collection("questions")
+                            .doc(docId)
+                            .update(data.toMap());
+                      }
 
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
-                          } finally {
-                            setModalState(() {
-                              isSaving = false;
-                            });
-                          }
-                        },
-                  child: isSaving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text("Save"),
-                )
-              ],
-            ),
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
+                    } finally {
+                      setModalState(() {
+                        isSaving = false;
+                      });
+                    }
+                  },
+            child: isSaving
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text("Save"),
           ),
         ),
       ),
+          
+          
+          
+          
+          
+          
+        ],
+      ),
+    ),
+  ),
+),
+      
+      
+      
+      
+      
     );
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   @override
   Widget build(BuildContext context) {
@@ -542,6 +621,8 @@ if (selectedSubject == "Mathematics") ...[
               });
             },
             itemBuilder: (context) => const [
+              PopupMenuItem(value: 'Pre-Nursery', child: Text('Pre-Nursery')),
+              PopupMenuItem(value: 'Nursery', child: Text('Nursery')),
               PopupMenuItem(value: '1', child: Text('Class 1')),
               PopupMenuItem(value: '2', child: Text('Class 2')),
               PopupMenuItem(value: '3', child: Text('Class 3')),
@@ -552,6 +633,7 @@ if (selectedSubject == "Mathematics") ...[
               PopupMenuItem(value: '8', child: Text('Class 8')),
               PopupMenuItem(value: '9', child: Text('Class 9')),
               PopupMenuItem(value: '10', child: Text('Class 10')),
+              PopupMenuItem(value: 'No-Class', child: Text('No-Class')),
             ],
           ),
         ],
