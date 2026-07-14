@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: false,
       ),
 
-      home: const HomeScreen(),
+      home: const SchoolDashboardScreen(),
     );
   }
 }

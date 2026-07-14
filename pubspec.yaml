@@ -30,10 +30,21 @@ dependencies:
   
   flutter_math_fork: ^0.7.4
 
+  # 🆕 AUTO SCROLLING TEXT PACKAGE
+  marquee: ^2.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # ➕ অ্যাপ আইকন চেঞ্জ করার প্যাকেজ এখানে যোগ করা হয়েছে
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+
+# ➕ অ্যাপ আইকনের কনফিগারেশন এখানে যোগ করা হয়েছে
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png" # আপনার আইকন ইমেজের পাথ (প্রয়োজনে নাম পরিবর্তন করে নিবেন)
