@@ -110,7 +110,10 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
           Expanded(
             child: Container(
               color: Colors.grey.shade100, 
-              child: _pages[_selectedIndex],
+              // 🔥 এখানে SafeArea যুক্ত করা হয়েছে যাতে স্ট্যাটাস বার কনটেন্ট ঢেকে না ফেলে
+              child: SafeArea(
+                child: _pages[_selectedIndex],
+              ),
             ),
           ),
         ],
@@ -159,7 +162,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
   }
 }
 
-// ================= ড্যাশবোর্ড ওভারভিউ স্ক্রিন (গ্রেডিয়েন্ট কার্ড সহ) =================
+// ================= ড্যাশবোর্ড ওভারভিউ স্ক্রিন =================
 class DashboardOverview extends StatelessWidget {
   const DashboardOverview({super.key});
 
@@ -256,7 +259,7 @@ class DashboardOverview extends StatelessWidget {
             const Text("Here is what's happening in your school today.", style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
 
-            // ড্যাশবোর্ড প্রিমিয়াম লাইভ গ্রেডিয়েন্ট কার্ড গ্রিড
+            // গ্রিড ভিউ কার্ডস
             LayoutBuilder(
               builder: (context, constraints) {
                 int crossAxisCount = constraints.maxWidth > 1200 ? 3 : (constraints.maxWidth > 800 ? 2 : 1);
@@ -272,42 +275,42 @@ class DashboardOverview extends StatelessWidget {
                       collectionPath: "students",
                       title: "Total Students",
                       icon: Icons.people,
-                      startColor: const Color(0xFF1E3C72), // রয়েল ব্লু গ্রেডিয়েন্ট
+                      startColor: const Color(0xFF1E3C72),
                       endColor: const Color(0xFF2A5298),
                     ),
                     _buildLiveStatCard(
                       collectionPath: "teachers",
                       title: "Total Teachers",
                       icon: Icons.badge,
-                      startColor: const Color(0xFF0F9D58), // ডিপ এমারেল্ড গ্রিন
+                      startColor: const Color(0xFF0F9D58),
                       endColor: const Color(0xFF007F4F),
                     ),
                     _buildLiveStatCard(
                       collectionPath: "questions", 
                       title: "Questions Added",
                       icon: Icons.quiz,
-                      startColor: const Color(0xFFE65C00), // ভাইব্রেন্ট সানসেট অরেঞ্জ
+                      startColor: const Color(0xFFE65C00),
                       endColor: const Color(0xFFF9D423),
                     ),
                     _buildLiveStatCard(
                       collectionPath: "drivers",
                       title: "Active Drivers",
                       icon: Icons.directions_bus,
-                      startColor: const Color(0xFF4A00E0), // নিয়ন পার্পল-ব্লু
+                      startColor: const Color(0xFF4A00E0),
                       endColor: const Color(0xFF8E2DE2),
                     ), 
                     _buildStaticStatCard(
                       "Support Staff", 
                       "24", 
                       Icons.engineering, 
-                      const Color(0xFF373B44), // ডার্ক মেটালিক স্লটে
+                      const Color(0xFF373B44),
                       const Color(0xFF4286f4),
                     ), 
                     _buildStaticStatCard(
                       "Attendance Rate", 
                       "94%", 
                       Icons.fact_check, 
-                      const Color(0xFFD31027), // রুবি রেড গ্রেডিয়েন্ট
+                      const Color(0xFFD31027),
                       const Color(0xFFEA0043),
                     ),
                   ],
@@ -316,7 +319,7 @@ class DashboardOverview extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // নোটিশ বোর্ড বা রিসেন্ট অ্যাক্টিভিটি
+            // নোটিশ বোর্ড
             const Text(
               "Recent Announcements",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
@@ -350,7 +353,6 @@ class DashboardOverview extends StatelessWidget {
     );
   }
 
-  // ফায়ারস্টোর লাইভ গ্রেডিয়েন্ট কার্ড জেনারেটর
   Widget _buildLiveStatCard({
     required String collectionPath,
     required String title,
@@ -374,11 +376,9 @@ class DashboardOverview extends StatelessWidget {
     );
   }
 
-  // সম্পূর্ণ ব্যাকগ্রাউন্ড গ্রেডিয়েন্ট সহ প্রিমিয়াম স্ট্যাট কার্ড ডিজাইন
   Widget _buildStaticStatCard(String title, String count, IconData icon, Color startColor, Color endColor) {
     return Container(
       decoration: BoxDecoration(
-        // 🔥 কার্ডের মূল ব্যাকগ্রাউন্ডে প্রিমিয়াম লিনিয়ার গ্রেডিয়েন্ট
         gradient: LinearGradient(
           colors: [startColor, endColor],
           begin: Alignment.topLeft,
@@ -393,7 +393,7 @@ class DashboardOverview extends StatelessWidget {
           ),
         ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.12), // হালকা গ্লাস বর্ডার
+          color: Colors.white.withOpacity(0.12),
           width: 1.5,
         ),
       ),
@@ -409,7 +409,6 @@ class DashboardOverview extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // টাইটেল টেক্সট (অর্ধ-স্বচ্ছ সাদা যাতে গ্রেডিয়েন্টে ভালো দেখায়)
                     Text(
                       title, 
                       style: TextStyle(
@@ -421,8 +420,6 @@ class DashboardOverview extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    
-                    // 🔥 বোল্ড হোয়াইট টেক্সট (শ্যাডো সহ চমৎকার ভিজ্যুয়াল পেতে)
                     Text(
                       count, 
                       style: const TextStyle(
@@ -443,8 +440,6 @@ class DashboardOverview extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              
-              // গ্লাস-মরফিজম (Glassmorphism) স্টাইলিশ আইকন বক্স
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -457,7 +452,7 @@ class DashboardOverview extends StatelessWidget {
                 ),
                 child: Icon(
                   icon, 
-                  color: Colors.white, // সাদা প্রিমিয়াম আইকন
+                  color: Colors.white,
                   size: 28,
                 ),
               ),
