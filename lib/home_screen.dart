@@ -4,6 +4,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 
 import 'models/question_model.dart';
 import 'details_screen.dart';
+import 'question_form_sheet.dart'; // নতুন ফাইলটি ইম্পোর্ট করা হলো
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,80 +15,66 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final firestore = FirebaseFirestore.instance;
-
-bool isRefreshing = false;
+  bool isRefreshing = false;
 
   final List<String> subjects = [
-  "No Subject",
-  "Bangla",
-  "English",
-  "Hindi",
-  "Mathematics",
-  "General Knowledge",
-  "Science",
-  "Physical Science",
-  "Life Science",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "History",
-  "Geography",
-  "Civics",
-  "Computer",
-  "Environmental Studies",
-  "Religious Studies"
-];
+    "No Subject",
+    "Bangla",
+    "English",
+    "Hindi",
+    "Mathematics",
+    "General Knowledge",
+    "Science",
+    "Physical Science",
+    "Life Science",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "History",
+    "Geography",
+    "Civics",
+    "Computer",
+    "Environmental Studies",
+    "Religious Studies"
+  ];
 
   String selectedFilter = "All";
   String selectedClass = "Nursery";
 
   Color getSubjectColor(String subject) {
-  switch (subject) {
-    case "Bangla":
-      return Colors.red;
-
-    case "English":
-      return Colors.purple;
-      
-    case "Hindi":
-      return Colors.deepPurple;
-
-    case "Mathematics":
-      return Colors.blue;
-
-    case "General Knowledge":
-      return Colors.amber;
-
-    case "Science":
-      return Colors.green;
-
-    case "Physical Science":
-    case "Physics":
-      return Colors.orange;
-
-    case "Chemistry":
-      return Colors.deepOrange;
-
-    case "Life Science":
-    case "Biology":
-      return Colors.lightGreen;
-
-    case "History":
-      return Colors.brown;
-
-    case "Geography":
-      return Colors.indigo;
-
-    case "Civics":
-      return Colors.cyan;
-
-    case "Computer":
-      return Colors.grey;
-
-    default:
-      return Colors.blueGrey;
+    switch (subject) {
+      case "Bangla":
+        return Colors.red;
+      case "English":
+        return Colors.purple;
+      case "Hindi":
+        return Colors.deepPurple;
+      case "Mathematics":
+        return Colors.blue;
+      case "General Knowledge":
+        return Colors.amber;
+      case "Science":
+        return Colors.green;
+      case "Physical Science":
+      case "Physics":
+        return Colors.orange;
+      case "Chemistry":
+        return Colors.deepOrange;
+      case "Life Science":
+      case "Biology":
+        return Colors.lightGreen;
+      case "History":
+        return Colors.brown;
+      case "Geography":
+        return Colors.indigo;
+      case "Civics":
+        return Colors.cyan;
+      case "Computer":
+        return Colors.grey;
+      default:
+        return Colors.blueGrey;
+    }
   }
-}
 
   Stream<QuerySnapshot> getQuestionStream() {
     if (selectedFilter == "All") {
@@ -104,455 +91,146 @@ bool isRefreshing = false;
     }
   }
 
-
-
-
   Future<bool> _verifyPassword() async {
-  final passwordController = TextEditingController();
+    final passwordController = TextEditingController();
 
-  final enteredPassword = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Password Required"),
-      content: TextField(
-        controller: passwordController,
-        obscureText: true,
-        decoration: const InputDecoration(
-          hintText: "Enter Password",
+    final enteredPassword = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Password Required"),
+        content: TextField(
+          controller: passwordController,
+          obscureText: true,
+          decoration: const InputDecoration(
+            hintText: "Enter Password",
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                passwordController.text.trim(),
+              );
+            },
+            child: const Text("OK"),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(
-              context,
-              passwordController.text.trim(),
-            );
-          },
-          child: const Text("OK"),
-        ),
-      ],
-    ),
-  );
-
-  if (enteredPassword == null) return false;
-
-  try {
-    final passwordDoc = await firestore
-        .collection("settings")
-        .doc("delete_password")
-        .get();
-
-    if (!passwordDoc.exists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password not found")),
-      );
-      return false;
-    }
-
-    final savedPassword = passwordDoc["password"].toString();
-
-    if (enteredPassword != savedPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Wrong Password")),
-      );
-      return false;
-    }
-
-    return true;
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
     );
-    return false;
+
+    if (enteredPassword == null) return false;
+
+    try {
+      final passwordDoc = await firestore
+          .collection("settings")
+          .doc("delete_password")
+          .get();
+
+      if (!passwordDoc.exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password not found")),
+          );
+        }
+        return false;
+      }
+
+      final savedPassword = passwordDoc["password"].toString();
+
+      if (enteredPassword != savedPassword) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Wrong Password")),
+          );
+        }
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+      return false;
+    }
   }
- 
-    
-  }
-
-
-
 
   Widget buildMixedText(String text) {
-  // যদি কোনো LaTeX না থাকে
-  if (!text.contains(r'\(') && !text.contains(r'\[')) {
-    return SelectableText(
-      text,
-      style: const TextStyle(
-        color: Colors.red,
-        fontWeight: FontWeight.bold,
-        fontSize: 18,
-      ),
+    if (!text.contains(r'\(') && !text.contains(r'\[')) {
+      return SelectableText(
+        text,
+        style: const TextStyle(
+          color: Colors.red,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+      );
+    }
+
+    final regex = RegExp(
+      r'\\\((.*?)\\\)|\\\[(.*?)\\\]',
+      dotAll: true,
     );
-  }
 
-  final regex = RegExp(
-  r'\\\((.*?)\\\)|\\\[(.*?)\\\]',
-  dotAll: true,
-  );
-  
-  final matches = regex.allMatches(text);
+    final matches = regex.allMatches(text);
+    List<InlineSpan> spans = [];
+    int last = 0;
 
-  List<InlineSpan> spans = [];
-  int last = 0;
+    for (final match in matches) {
+      if (match.start > last) {
+        spans.add(
+          TextSpan(
+            text: text.substring(last, match.start),
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        );
+      }
 
-  for (final match in matches) {
-    if (match.start > last) {
+      final latex = match.group(1) ?? match.group(2)!;
+
       spans.add(
-        TextSpan(
-          text: text.substring(last, match.start),
-          style: const TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Math.tex(
+            latex,
+            mathStyle: MathStyle.display,
+            textStyle: const TextStyle(
+              color: Colors.red,
+              fontSize: 18,
+            ),
           ),
         ),
       );
+
+      last = match.end;
     }
 
-    final latex = match.group(1) ?? match.group(2)!;
-
-spans.add(
-  WidgetSpan(
-    alignment: PlaceholderAlignment.middle,
-    child: Math.tex(
-      latex,
-      mathStyle: MathStyle.display,
-      textStyle: const TextStyle(
-        color: Colors.red,
-        fontSize: 18,
-      ),
-    ),
-  ),
-);
-
-    last = match.end;
-  }
-
-  if (last < text.length) {
-    spans.add(
-      TextSpan(
+    if (last < text.length) {
+      spans.add(TextSpan(
         text: text.substring(last),
         style: const TextStyle(
           color: Colors.red,
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),
-      )
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
     );
   }
-
-  return RichText(
-    text: TextSpan(children: spans),
-  );
-}
-
-
-
-
-  void _showForm({QuestionModel? model, String? docId}) {
-    String selectedSubject = model?.subject ?? subjects.first;
-    String selectedCls = model?.className ?? "Pre-Nursery";
-
-    final quesController =
-        TextEditingController(text: model?.question ?? "");
-    final ansController =
-        TextEditingController(text: model?.answer ?? "");
-
-    bool isSaving = false;
-    
-    bool showPreview = true;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      
-      
-      
-      
-      
-      builder: (_) => StatefulBuilder(
-  builder: (context, setModalState) => Padding(
-    padding: EdgeInsets.only(
-      bottom: MediaQuery.of(context).viewInsets.bottom,
-    ),
-    child: SizedBox(
-      height: MediaQuery.of(context).size.height * 0.9,
-      child: Column(
-        children: [
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-              child: Column(
-                  
-              children: [
-                
-              Text(
-              model == null ? "Add Question" : "Update Question",
-              style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              ),
-              ),
-
-              const SizedBox(height: 10),
-
-
-
-
-
-        const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: selectedCls,
-                  decoration: const InputDecoration(labelText: "Class"),
-                  items: ["Pre-Nursery", "Nursery", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "No-Class"]
-                  
-                  .map((c) => DropdownMenuItem(
-                  value: c,
-                  child: Text(c == "Pre-Nursery" || c == "Nursery"
-                  ? c
-                  : "Class $c"),
-                  ))
-                  .toList(),
-                      
-                  onChanged: (val) =>
-                      setModalState(() => selectedCls = val!),
-                ),
-
-                DropdownButtonFormField<String>(
-                  value: selectedSubject,
-                  decoration: const InputDecoration(labelText: "Subject"),
-                  items: subjects
-                      .map((s) => DropdownMenuItem(
-                          value: s, child: Text(s)))
-                      .toList(),
-                      
-                  onChanged: (val) {
-                  setModalState(() {
-                  selectedSubject = val!;
-                   });
-                  },
-                      
-                ),
-                
-                
-
-                
-        TextField(
-        controller: quesController,
-        decoration: const InputDecoration(labelText: "Question"),
-        keyboardType: TextInputType.multiline,
-        textInputAction: TextInputAction.newline,
-        maxLines: null,
-        minLines: 3,
-        onChanged: (_) {
-        setModalState(() {});
-        },
-        ),
-        
-        if (selectedSubject == "Mathematics")
-  SwitchListTile(
-    contentPadding: EdgeInsets.zero,
-    title: const Text("Show Preview"),
-    value: showPreview,
-    onChanged: (value) {
-      setModalState(() {
-        showPreview = value;
-      });
-    },
-  ),
-        
-
-        if (selectedSubject == "Mathematics" && showPreview) ...[
-          
-        const SizedBox(height: 10),
-
-        const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-        "Preview",
-         style: TextStyle(
-        fontWeight: FontWeight.bold,
-         ),
-        ),
-        ),
-
-  const SizedBox(height: 8),
-
-  Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    
-    
-    
-    child: quesController.text.isEmpty
-    ? const Text("Start typing...")
-    : buildMixedText(quesController.text),
-          
-          
-          
-  ),
-
-  const SizedBox(height: 10),
-],
-
-
-
-
-TextField(
-  controller: ansController,
-  decoration: const InputDecoration(labelText: "Answer"),
-  keyboardType: TextInputType.multiline,
-  textInputAction: TextInputAction.newline,
-  maxLines: null,
-  minLines: 3,
-  onChanged: (_) {
-    setModalState(() {});
-  },
-),
-
-if (selectedSubject == "Mathematics" && showPreview) ...[
-  const SizedBox(height: 10),
-
-  const Align(
-    alignment: Alignment.centerLeft,
-    child: Text(
-      "Answer Preview",
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-  ),
-
-  const SizedBox(height: 8),
-
-  Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      border: Border.all(color: Colors.grey),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    
-    
-    child: ansController.text.isEmpty
-    ? const Text("Start typing...")
-    : buildMixedText(ansController.text),
-          
-          
-          
-  ),
-
-  const SizedBox(height: 10),
-  ],
-
-  ],
-              
-              
-  ),
-  ),
-  ),
-
-          SafeArea(
-        top: false,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: isSaving
-                ? null
-                : () async {
-                    setModalState(() {
-                      isSaving = true;
-                    });
-
-                    final data = QuestionModel(
-                      subject: selectedSubject,
-                      question: quesController.text.trim(),
-                      answer: ansController.text.trim(),
-                      className: selectedCls,
-                    );
-
-                    try {
-                      if (model == null) {
-                        await firestore
-                            .collection("questions")
-                            .add({
-                          ...data.toMap(),
-                          "createdAt": Timestamp.now(),
-                        });
-                      } else {
-                        await firestore
-                            .collection("questions")
-                            .doc(docId)
-                            .update(data.toMap());
-                      }
-
-                      if (mounted) {
-                        Navigator.pop(context);
-                      }
-                    } finally {
-                      setModalState(() {
-                        isSaving = false;
-                      });
-                    }
-                  },
-            child: isSaving
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text("Save"),
-          ),
-        ),
-      ),
-          
-          
-          
-          
-          
-          
-        ],
-      ),
-    ),
-  ),
-),
-      
-      
-      
-      
-      
-    );
-  }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
   @override
   Widget build(BuildContext context) {
@@ -563,57 +241,54 @@ if (selectedSubject == "Mathematics" && showPreview) ...[
         title: Text("Class $selectedClass"),
         centerTitle: true,
         actions: [
-          
           isRefreshing
-    ? const Padding(
-        padding: EdgeInsets.all(12),
-        child: SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white,
-          ),
-        ),
-      )
-    : IconButton(
-        icon: const Icon(Icons.refresh),
-        onPressed: () async {
-          setState(() {
-            isRefreshing = true;
-          });
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () async {
+                    setState(() {
+                      isRefreshing = true;
+                    });
 
-          try {
-            await firestore
-                .collection("questions")
-                .get(const GetOptions(source: Source.server));
+                    try {
+                      await firestore
+                          .collection("questions")
+                          .get(const GetOptions(source: Source.server));
 
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Data refreshed"),
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Data refreshed"),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Internet slow or unavailable"),
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          isRefreshing = false;
+                        });
+                      }
+                    }
+                  },
                 ),
-              );
-            }
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Internet slow or unavailable"),
-                ),
-              );
-            }
-          } finally {
-            if (mounted) {
-              setState(() {
-                isRefreshing = false;
-              });
-            }
-          }
-        },
-      ),
-          
-          
           PopupMenuButton<String>(
             onSelected: (value) {
               setState(() {
@@ -638,7 +313,6 @@ if (selectedSubject == "Mathematics" && showPreview) ...[
           ),
         ],
       ),
-
       body: Column(
         children: [
           SizedBox(
@@ -668,7 +342,6 @@ if (selectedSubject == "Mathematics" && showPreview) ...[
               },
             ),
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: getQuestionStream(),
@@ -694,101 +367,84 @@ if (selectedSubject == "Mathematics" && showPreview) ...[
                     final color = getSubjectColor(model.subject);
 
                     return GestureDetector(
-                    
-                    
-                    
-                    
-                    
                       onLongPress: () async {
-  final action = await showModalBottomSheet<String>(
-    context: context,
-    builder: (context) => SafeArea(
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text("Edit"),
-            onTap: () => Navigator.pop(context, "edit"),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text(
-              "Delete",
-              style: TextStyle(color: Colors.red),
-            ),
-            onTap: () => Navigator.pop(context, "delete"),
-          ),
-        ],
-      ),
-    ),
-  );
+                        final action = await showModalBottomSheet<String>(
+                          context: context,
+                          builder: (context) => SafeArea(
+                            child: Wrap(
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.edit),
+                                  title: const Text("Edit"),
+                                  onTap: () => Navigator.pop(context, "edit"),
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.delete, color: Colors.red),
+                                  title: const Text(
+                                    "Delete",
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                  onTap: () => Navigator.pop(context, "delete"),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
 
-  if (action == "edit") {
-  if (await _verifyPassword()) {
-    _showForm(
-      model: model,
-      docId: model.id,
-    );
-  }
-  return;
-}
+                        if (action == "edit") {
+                          if (await _verifyPassword()) {
+                            showQuestionFormSheet(
+                              context: context,
+                              firestore: firestore,
+                              subjects: subjects,
+                              buildMixedText: buildMixedText,
+                              model: model,
+                              docId: model.id,
+                            );
+                          }
+                          return;
+                        }
 
+                        if (action != "delete") return;
 
-  
+                        if (!await _verifyPassword()) return;
 
-  // ===== নিচে আপনার আগের Delete Code =====
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("Confirm Delete"),
+                            content: const Text(
+                              "Are you sure you want to delete this question?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("Cancel"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text("Delete"),
+                              ),
+                            ],
+                          ),
+                        );
 
-  if (action != "delete") return;
+                        if (confirm == true) {
+                          await firestore
+                              .collection("questions")
+                              .doc(model.id)
+                              .delete();
 
-  if (!await _verifyPassword()) return;
-
-final confirm = await showDialog<bool>(
-  context: context,
-  builder: (context) => AlertDialog(
-    title: const Text("Confirm Delete"),
-    content: const Text(
-      "Are you sure you want to delete this question?",
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        child: const Text("Cancel"),
-      ),
-      ElevatedButton(
-        onPressed: () => Navigator.pop(context, true),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-        ),
-        child: const Text("Delete"),
-      ),
-    ],
-  ),
-);
-
-if (confirm == true) {
-  await firestore
-      .collection("questions")
-      .doc(model.id)
-      .delete();
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Deleted successfully")),
-  );
-}
-
-  
-  
-  
-  
-  
-},
-
-
-
-                      
-                      
-                      
-                      
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Deleted successfully")),
+                            );
+                          }
+                        }
+                      },
                       child: Card(
                         margin: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -810,40 +466,36 @@ if (confirm == true) {
                             title: Text(
                               "Class ${model.className} • ${model.subject}",
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: color),
+                                  fontWeight: FontWeight.bold, color: color),
                             ),
-                            
-                            
                             subtitle: Padding(
-  padding: const EdgeInsets.only(top: 6),
-  
-  
-  child: model.subject == "Mathematics"
-    ? buildMixedText(model.question)
-    
-    
-      : Text(
-          "Q: ${model.question}",
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-),
-                            
-                            
-                            
+                              padding: const EdgeInsets.only(top: 6),
+                              child: model.subject == "Mathematics"
+                                  ? buildMixedText(model.question)
+                                  : Text(
+                                      "Q: ${model.question}",
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => DetailsScreen(
                                     model: model,
-                                    onEdit: (m) => _showForm(
-                                        model: m, docId: model.id),
+                                    onEdit: (m) => showQuestionFormSheet(
+                                      context: context,
+                                      firestore: firestore,
+                                      subjects: subjects,
+                                      buildMixedText: buildMixedText,
+                                      model: m,
+                                      docId: model.id,
+                                    ),
                                   ),
                                 ),
                               );
@@ -859,14 +511,18 @@ if (confirm == true) {
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.indigo,
         onPressed: () async {
-  if (await _verifyPassword()) {
-    _showForm();
-  }
-},
+          if (await _verifyPassword()) {
+            showQuestionFormSheet(
+              context: context,
+              firestore: firestore,
+              subjects: subjects,
+              buildMixedText: buildMixedText,
+            );
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );
