@@ -18,7 +18,7 @@ class _QuestionManagementScreenState extends State<QuestionManagementScreen> {
   bool isRefreshing = false;
 
   final List<String> subjects = [
-    "No Subject", "Bangla", "English", "Hindi", "Mathematics", 
+    "Private", "Bangla", "English", "Hindi", "Mathematics", 
     "General Knowledge", "Science", "Physical Science", "Life Science", 
     "Physics", "Chemistry", "Biology", "History", "Geography", 
     "Civics", "Computer", "Environmental Studies", "Religious Studies"
@@ -191,9 +191,8 @@ class _QuestionManagementScreenState extends State<QuestionManagementScreen> {
     final filterOptions = ["All", ...subjects];
 
     return Scaffold(
-      backgroundColor: Colors.transparent, // ড্যাশবোর্ডের ব্যাকগ্রাউন্ড ব্যবহার করার জন্য
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        // অ্যাপবারের টাইটেল সুন্দর ও স্পষ্ট করা হয়েছে এবং ক্লাস ও সাবজেক্ট ফিল্টার রিয়েল-টাইমে দেখাবে
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -424,7 +423,15 @@ class _QuestionManagementScreenState extends State<QuestionManagementScreen> {
                                       ),
                                     ),
                             ),
-                            onTap: () {
+                            onTap: () async {
+                              // "Private" হলে পাসওয়ার্ড যাচাই করা হবে
+                              if (model.subject == "Private") {
+                                final isPasswordValid = await _verifyPassword();
+                                if (!isPasswordValid) return; // পাসওয়ার্ড সঠিক না হলে সামনে যাবে না
+                              }
+
+                              if (!mounted) return;
+
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
